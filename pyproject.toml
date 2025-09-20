@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SpeechTokenizer"
-version = "0.1.94"
+version = "0.1.95"
 authors = [
   { name="Author Name", email="author@example.com" },
 ]
