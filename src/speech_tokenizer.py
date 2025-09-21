@@ -7,6 +7,8 @@ from vocos import CodecDecoderVocos
 import torch.nn as nn
 from transformers import PreTrainedModel
 from transformers import AutoFeatureExtractor, Wav2Vec2BertModel
+import librosa
+import numpy as np
 
 def ids_to_speech_tokens(speech_ids):
  
@@ -27,7 +29,14 @@ def extract_speech_ids(speech_tokens_str):
         else:
             print(f"Unexpected token: {token_str}")
     return speech_ids 
-    
+
+def preprocess_audio(audio_path, duration=6.0, add_silence=16000):
+    wav, sr = librosa.load(audio_path, sr=16000, duration=duration)
+    if add_silence:
+        wav = np.concatenate((wav, np.zeros(add_silence, dtype=wav.dtype)))
+    wav_tensor = torch.from_numpy(wav).half().unsqueeze(0)  # Shape: (1, T)
+
+ 
 class ModelCheckpointLoader:
     """
     A class to load a model checkpoint from a .safetensors file and extract
@@ -169,7 +178,9 @@ class XCodec2Model():
         recon_audio = self.generator(vq_post_emb.transpose(1, 2), vq=False)[0]
         return recon_audio
 
-    def encode_code(self, input_waveform, sample_rate=16000, output_tokens=False):
+    def encode_code(self, input_waveform, sample_rate=16000, output_tokens=False, duration=6.0, add_silence=16000):
+        
+        input_waveform = preprocess_audio(input_waveform, duration, add_silence)
         
         with torch.no_grad():
             input_features = self.feature_extractor(
