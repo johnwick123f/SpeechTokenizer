@@ -8,6 +8,26 @@ import torch.nn as nn
 from transformers import PreTrainedModel
 from transformers import AutoFeatureExtractor, Wav2Vec2BertModel
 
+def ids_to_speech_tokens(speech_ids):
+ 
+    speech_tokens_str = []
+    for speech_id in speech_ids:
+        speech_tokens_str.append(f"<|s_{speech_id}|>")
+    return speech_tokens_str
+
+def extract_speech_ids(speech_tokens_str):
+ 
+    speech_ids = []
+    for token_str in speech_tokens_str:
+        if token_str.startswith('<|s_') and token_str.endswith('|>'):
+            num_str = token_str[4:-2]
+
+            num = int(num_str)
+            speech_ids.append(num)
+        else:
+            print(f"Unexpected token: {token_str}")
+    return speech_ids 
+    
 class ModelCheckpointLoader:
     """
     A class to load a model checkpoint from a .safetensors file and extract
@@ -149,7 +169,7 @@ class XCodec2Model():
         recon_audio = self.generator(vq_post_emb.transpose(1, 2), vq=False)[0]
         return recon_audio
 
-    def encode_code(self, input_waveform, sample_rate=16000):
+    def encode_code(self, input_waveform, sample_rate=16000, output_tokens=False):
         
         with torch.no_grad():
             input_features = self.feature_extractor(
@@ -177,6 +197,10 @@ class XCodec2Model():
             concat_emb = self.fc_prior(concat_emb.transpose(1, 2)).transpose(1, 2)
 
             _, vq_code, _ = self.generator(concat_emb, vq=True)
+            if output_tokens:
+                vq_code_prompt = vq_code[0,0,:]
+                speech_ids = ids_to_speech_tokens(vq_code_prompt)
+                return speech_ids
             return vq_code
 
     def decode_code(self, vq_code):
