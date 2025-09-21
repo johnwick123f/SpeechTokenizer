@@ -35,6 +35,7 @@ def preprocess_audio(audio_path, duration=6.0, add_silence=16000):
     if add_silence:
         wav = np.concatenate((wav, np.zeros(add_silence, dtype=wav.dtype)))
     wav_tensor = torch.from_numpy(wav).half().unsqueeze(0)  # Shape: (1, T)
+    return wav_tensor
 
  
 class ModelCheckpointLoader:
